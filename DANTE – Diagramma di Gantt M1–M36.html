@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DANTE – Diagramma di Gantt (M1–M36)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f7f6f2; --panel:#ffffff; --ink:#1d1d1b; --muted:#6b6a65; --line:#e4e2db; --line2:#efede7;
+    --y1:#f3f1ea; --y2:#ffffff;
+    --wp0:#6b6a65; --wp1:#2f6f8f; --wp2:#3f8a6b; --wp3:#7a5ea8; --wp4:#c0703a; --wp5:#b5475f; --wp6:#8a7a2a;
+    --ms:#1d1d1b;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#161614; --panel:#1f1f1c; --ink:#ecebe6; --muted:#a19f97; --line:#34332e; --line2:#2a2925;
+      --y1:#242420; --y2:#1f1f1c; --ms:#ecebe6;
+      --wp0:#9a998f; --wp1:#5aa3c6; --wp2:#62b892; --wp3:#a48ad0; --wp4:#e09661; --wp5:#df6f87; --wp6:#c2ae4f; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans",system-ui,sans-serif;font-size:14px;line-height:1.45}
+  .wrap{max-width:1320px;margin:0 auto;padding:32px 24px 56px}
+  header h1{font-size:24px;font-weight:600;margin:0 0 4px;letter-spacing:-.01em}
+  header p{margin:0;color:var(--muted);max-width:900px}
+  .meta{display:flex;flex-wrap:wrap;gap:8px 20px;margin:14px 0 22px;color:var(--muted);font-size:13px}
+  .meta b{color:var(--ink);font-weight:500}
+  .controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+  .controls button{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:6px 12px;border-radius:6px;cursor:pointer}
+  .controls button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin-left:auto;color:var(--muted);font-size:12.5px;align-items:center}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .sw-bar{width:22px;height:9px;border-radius:2px;background:var(--wp1)}
+  .sw-d{width:9px;height:9px;border-radius:50%;background:var(--panel);border:2px solid var(--wp1)}
+  .sw-m{width:9px;height:9px;background:var(--ms);transform:rotate(45deg)}
+
+  .chart{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow-x:auto}
+  .grid{display:grid;grid-template-columns:300px repeat(36, minmax(24px,1fr));min-width:1180px;position:relative}
+  .cell{border-bottom:1px solid var(--line2);min-height:34px}
+  .hd{position:sticky;top:0;z-index:3;background:var(--panel)}
+  .yr{font-size:12px;font-weight:600;text-align:center;padding:8px 0 4px;border-bottom:1px solid var(--line);border-left:1px solid var(--line)}
+  .ph{font-size:11.5px;color:var(--muted);text-align:center;padding:4px 0;border-bottom:1px solid var(--line);border-left:1px solid var(--line)}
+  .mo{font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--muted);text-align:center;padding:5px 0;border-bottom:1px solid var(--line)}
+  .label{position:sticky;left:0;z-index:2;background:var(--panel);padding:8px 12px 8px 16px;border-right:1px solid var(--line);display:flex;flex-direction:column;justify-content:center}
+  .label .code{font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:500}
+  .label .name{font-size:12.5px;color:var(--muted);line-height:1.3}
+  .label.sub{padding-left:30px}
+  .label.sub .name{font-size:12px}
+  .label.wp{cursor:pointer}
+  .label.wp .code::before{content:"▸ ";color:var(--muted)}
+  .label.wp.open .code::before{content:"▾ "}
+  .track{grid-column:2 / span 36;position:relative;border-bottom:1px solid var(--line2);
+    background-image:linear-gradient(to right, var(--line2) 1px, transparent 1px);background-size:calc(100%/36) 100%}
+  .track.y{background-image:linear-gradient(to right, var(--line2) 1px, transparent 1px),
+    linear-gradient(to right, var(--y1) 0 33.333%, var(--y2) 33.333% 66.666%, var(--y1) 66.666% 100%);background-size:calc(100%/36) 100%,100% 100%}
+  .bar{position:absolute;top:50%;height:14px;transform:translateY(-50%);border-radius:3px;opacity:.9}
+  .bar.thin{height:6px;opacity:.55}
+  .bar span{position:absolute;left:6px;top:50%;transform:translateY(-50%);font-size:10.5px;color:#fff;font-family:"IBM Plex Mono",monospace;white-space:nowrap}
+  .dl{position:absolute;top:50%;width:12px;height:12px;border-radius:50%;background:var(--panel);border:2.5px solid;transform:translate(-50%,-50%);z-index:1}
+  .msk{position:absolute;top:50%;width:12px;height:12px;background:var(--ms);transform:translate(-50%,-50%) rotate(45deg);z-index:1}
+  .tag{position:absolute;top:50%;transform:translateY(-50%);font-size:11px;font-family:"IBM Plex Mono",monospace;white-space:nowrap;color:var(--ink)}
+  .vline{position:absolute;top:0;bottom:0;width:0;border-left:1.5px dashed var(--ms);opacity:.35;pointer-events:none;z-index:0}
+  .sep .label,.sep .track{background:var(--bg)}
+  .sep .label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;min-height:28px}
+  .hidden{display:none !important}
+  [data-tip]{cursor:default}
+  .tip{position:fixed;z-index:20;max-width:320px;background:var(--ink);color:var(--bg);padding:8px 10px;border-radius:6px;font-size:12.5px;pointer-events:none;opacity:0;transition:opacity .1s}
+  .tip b{font-weight:600}
+
+  h2{font-size:17px;font-weight:600;margin:36px 0 10px}
+  table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:13px}
+  th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line2);vertical-align:top}
+  th{font-weight:600;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;background:var(--y1)}
+  td.m{font-family:"IBM Plex Mono",monospace;white-space:nowrap}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle}
+  .note{color:var(--muted);font-size:12.5px;margin-top:14px;max-width:960px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>DANTE – Diagramma di Gantt</h1>
+    <p>DigitAl twiN Territoriale per le Emergenze · Piattaforma nazionale multi-rischio a supporto delle decisioni per la prevenzione dei disastri naturali</p>
+  </header>
+  <div class="meta">
+    <div>Proponente <b>UNIBA</b></div>
+    <div>Durata <b>36 mesi</b></div>
+    <div>Programma <b>ICSC Grants – Spoke 5</b></div>
+    <div>Partner <b>UNIVAQ, UNIFI, Sapienza, ENEA, INGV, CNR, POLIBA</b></div>
+  </div>
+
+  <div class="controls">
+    <button id="btnAll" aria-pressed="false">Espandi tutti i WP</button>
+    <button id="btnNone" aria-pressed="false">Comprimi tutti</button>
+    <div class="legend">
+      <span><i class="sw-bar"></i>Durata WP</span>
+      <span><i class="sw-d"></i>Deliverable</span>
+      <span><i class="sw-m"></i>Milestone</span>
+    </div>
+  </div>
+
+  <div class="chart"><div class="grid" id="grid"></div></div>
+
+  <p class="note">Clic su un WP per mostrare le sue attività principali. Le attività interne ai WP non hanno date proprie nel progetto approvato: sono riportate sull'intero arco del rispettivo WP. I mesi sono relativi all'avvio del progetto (M1); la data di inizio effettiva non è indicata nel documento.</p>
+
+  <h2>Deliverable e milestone</h2>
+  <table id="tbl"><thead><tr><th>Mese</th><th>Codice</th><th>Titolo</th><th>WP</th></tr></thead><tbody></tbody></table>
+
+  <p class="note">Fonte: Allegato B – Scheda di progetto DANTE approvata (ICSC Grants Spoke 5, triennale). Le tre fasi (set-up e integrazione dati · sviluppo e validazione · consolidamento e trasferimento) seguono la descrizione dell'impianto triennale nel documento.</p>
+</div>
+<div class="tip" id="tip"></div>
+
+<script>
+const WPS = [
+  {id:"WP0", name:"Coordinamento e valorizzazione dei risultati", s:1, e:36, c:"--wp0",
+   acts:["Coordinamento scientifico, tecnico e gestionale","Monitoraggio WP, deliverable, milestone e KPI","Gestione dei rischi progettuali","Coordinamento partner e stakeholder","Supervisione qualità dei risultati","Documentazione, web e contenuti per stakeholder","Evidenze per piano di sostenibilità e roadmap 2027-2028"],
+   dl:[["D0.1",3,"Piano di coordinamento, qualità e gestione dei rischi"],["D0.2",6,"Piano di validazione tecnica e valorizzazione applicativa"],["D0.3",18,"Report intermedio di avanzamento e valorizzazione"],["D0.4",36,"Report finale di progetto e valorizzazione"]],
+   ms:[["MS0",3,"Avvio operativo e governance di progetto"]]},
+  {id:"WP1", name:"Digitalizzazione, catalogazione e interoperabilità dei dati", s:1, e:36, c:"--wp1",
+   acts:["Automazione e consolidamento data cleaning e integrazione","Messa in esercizio pipeline ETL/NLP","Ontologia per digital twin di prevenzione disastri","Metadatazione e catalogazione FAIR","Piattaforma di acquisizione e gestione dati","Aggiornamento automatico del data lake","Dataset documentati e validati per workflow HPC"],
+   dl:[["D1.1",6,"Piano dati, governance e requisiti"],["D1.2",12,"Data lake multi-sorgente multi-dominio v1"],["D1.3",36,"Data lake multi-sorgente multi-dominio v2"]],
+   ms:[]},
+  {id:"WP2", name:"Digital Twin territoriali e infrastrutturali", s:6, e:30, c:"--wp2",
+   acts:["Consolidamento e validazione modelli sui casi pilota","Industrializzazione workflow di assimilazione dati","Validazione stima variabili latenti con metriche di incertezza","Porting modelli surrogati su HPC","Aggiornamento incrementale del twin (sensori, satellite)","Integrazione flussi multi-sorgente con controllo qualità","Mantenimento e scale-up HR-DTM-5m e RAIN-EX"],
+   dl:[["D2.1",18,"Workflow HPC per modelli di singolo hazard"],["D2.2",24,"Digital Twin di singolo hazard e validazione tecnico-scientifica"]],
+   ms:[]},
+  {id:"WP3", name:"Governance, requisiti e co-design con stakeholder", s:12, e:36, c:"--wp3",
+   acts:["Architettura modulare dei digital twin dei casi studio","Integrazione modelli di hazard, dati, algoritmi e piattaforme","Interfacce standard tra moduli","Pipeline automatiche data lake → digital twin","Validazione dell'interoperabilità","Predisposizione scenari multi-modello e multi-hazard","Workflow near real-time per dati sismici"],
+   dl:[["D3.1",18,"Architettura modulare dei digital twin interoperabili"],["D3.2",30,"Digital twin interoperabili v1 dei casi studio"]],
+   ms:[]},
+  {id:"WP4", name:"Workflow HPC/AI per scenari di rischio multi-modello e multi-hazard", s:18, e:36, c:"--wp4",
+   acts:["Integrazione modelli e digital twin (WP2, WP3) in workflow HPC","Validazione workflow HPC sui casi studio","Scenario multi-hazard/cascading","Ottimizzazione e test di scalabilità HPC/AI","Benchmark riproducibili","Quantificazione dell'incertezza","Confronto con baseline operative"],
+   dl:[["D4.1",24,"Workflow HPC validati sui casi studio (≥4)"],["D4.2",30,"Scenario multi-hazard/cascading integrato"]],
+   ms:[]},
+  {id:"WP5", name:"Portale dimostrativo, API, XAI e servizi per il supporto decisionale", s:24, e:36, c:"--wp5",
+   acts:["Portale dimostrativo per casi studio e scenari","Moduli XAI","Validazione mappe di sensibilità e indicatori","Viste per utenti tecnici, decisori e stakeholder","Integrazione confidenza e incertezza nelle interfacce","Sessioni di testing con stakeholder","Adeguamento del portale da co-design"],
+   dl:[["D5.1",32,"Portale dimostrativo, API e moduli XAI"],["D5.2",36,"Report di testing e validazione con stakeholder"]],
+   ms:[]},
+  {id:"WP6", name:"Validazione, trasferimento e sostenibilità", s:30, e:36, c:"--wp6",
+   acts:["Metriche di validazione finale","Test conclusivi sui casi studio reali","Confronto con procedure operative degli stakeholder","Analisi dell'uso di DANTE nei processi decisionali","Modelli di servizio e valorizzazione","≥2 lettere di interesse o accordi","Piano di sostenibilità e roadmap 2027-2028","≥2 sessioni di co-design con stakeholder"],
+   dl:[["D6.1",34,"Piano di sostenibilità e trasferimento tecnologico"],["D6.2",36,"Roadmap 2027-2028 per adozione ed estensione"]],
+   ms:[]},
+];
+const MILESTONES = [
+  ["MS0",3,"Avvio operativo e governance di progetto"],
+  ["MS1",12,"Gate annuale 1 – verifica avanzamento, chiusura 20% budget, primo rilascio data lake"],
+  ["MS2",24,"Gate annuale 2 – consolidamento sviluppo, avvio validazione estesa"],
+  ["MS3",36,"Gate finale di validazione e readiness tecnologica"],
+];
+
+const g = document.getElementById("grid");
+const pct = m => ((m-0.5)/36*100);           // centre of month m
+const left = m => ((m-1)/36*100);
+const width = (s,e) => ((e-s+1)/36*100);
+const col = v => `var(${v})`;
+function el(tag, cls, html){const x=document.createElement(tag); if(cls) x.className=cls; if(html!=null) x.innerHTML=html; return x;}
+
+// header: years
+const h0 = el("div","cell hd label"); h0.style.gridRow="1 / span 3"; h0.innerHTML='<span class="code">Work package</span>'; g.appendChild(h0);
+["Anno 1","Anno 2","Anno 3"].forEach((t,i)=>{const d=el("div","hd yr",t); d.style.gridColumn=`${2+i*12} / span 12`; d.style.gridRow="1"; g.appendChild(d);});
+["Set-up e integrazione dati","Sviluppo e validazione","Consolidamento e trasferimento"].forEach((t,i)=>{const d=el("div","hd ph",t); d.style.gridColumn=`${2+i*12} / span 12`; d.style.gridRow="2"; g.appendChild(d);});
+for(let m=1;m<=36;m++){const d=el("div","hd mo","M"+m); d.style.gridColumn=String(1+m); d.style.gridRow="3"; g.appendChild(d);}
+
+let row = 4;
+function addRow(labelHTML, labelCls, build, rowCls){
+  const l = el("div","cell label "+(labelCls||""), labelHTML); l.style.gridRow=row; l.style.gridColumn="1";
+  const t = el("div","track y"); t.style.gridRow=row;
+  if(rowCls){l.classList.add(...rowCls); t.classList.add(...rowCls);}
+  build && build(t);
+  g.appendChild(l); g.appendChild(t); row++;
+  return [l,t];
+}
+function tipAttr(node, html){node.dataset.tip=html;}
+
+// milestone row
+addRow('<span class="code">Milestone di progetto</span><span class="name">Gate di verifica</span>', "", t=>{
+  MILESTONES.forEach(([c,m,n])=>{
+    const k=el("div","msk"); k.style.left=pct(m)+"%"; tipAttr(k,`<b>${c} · M${m}</b><br>${n}`); t.appendChild(k);
+    const lb=el("div","tag",c); lb.style.left=`calc(${pct(m)}% ${m>=34?"- 44px":"+ 10px"})`; t.appendChild(lb);
+  });
+});
+
+WPS.forEach(wp=>{
+  const [l] = addRow(`<span class="code">${wp.id} · M${wp.s}–M${wp.e}</span><span class="name">${wp.name}</span>`, "wp", t=>{
+    const b=el("div","bar"); b.style.left=left(wp.s)+"%"; b.style.width=width(wp.s,wp.e)+"%"; b.style.background=col(wp.c);
+    tipAttr(b,`<b>${wp.id}</b> · M${wp.s}–M${wp.e} (${wp.e-wp.s+1} mesi)<br>${wp.name}`); t.appendChild(b);
+    wp.dl.forEach(([c,m,n])=>{const d=el("div","dl"); d.style.left=pct(m)+"%"; d.style.borderColor=col(wp.c); tipAttr(d,`<b>${c} · M${m}</b><br>${n}`); t.appendChild(d);});
+    wp.ms.forEach(([c,m,n])=>{const k=el("div","msk"); k.style.left=pct(m)+"%"; tipAttr(k,`<b>${c} · M${m}</b><br>${n}`); t.appendChild(k);});
+  });
+  l.dataset.wp=wp.id;
+  wp.acts.forEach(a=>{
+    addRow(`<span class="name">${a}</span>`, "sub", t=>{
+      const b=el("div","bar thin"); b.style.left=left(wp.s)+"%"; b.style.width=width(wp.s,wp.e)+"%"; b.style.background=col(wp.c); t.appendChild(b);
+    }, ["hidden","act-"+wp.id]);
+  });
+  // deliverable rows
+  wp.dl.forEach(([c,m,n])=>{
+    addRow(`<span class="name"><span class="code" style="font-size:11px">${c}</span> · ${n}</span>`, "sub", t=>{
+      const d=el("div","dl"); d.style.left=pct(m)+"%"; d.style.borderColor=col(wp.c); tipAttr(d,`<b>${c} · M${m}</b><br>${n}`); t.appendChild(d);
+      const lb=el("div","tag","M"+m); lb.style.left=`calc(${pct(m)}% ${m>=34?"- 38px":"+ 10px"})`; t.appendChild(lb);
+    }, ["hidden","act-"+wp.id]);
+  });
+});
+
+// vertical gate lines
+const overlayRows = row-4;
+MILESTONES.forEach(([c,m])=>{
+  const v=el("div","vline"); v.style.gridColumn="2 / span 36"; v.style.gridRow=`4 / span ${overlayRows}`;
+  v.style.position="relative"; v.style.borderLeft="none"; v.style.width="auto";
+  const inner=el("div"); inner.style.cssText=`position:absolute;top:0;bottom:0;left:${pct(m)}%;border-left:1.5px dashed var(--ms);opacity:.3`;
+  v.appendChild(inner); v.style.opacity="1"; g.appendChild(v);
+});
+
+// toggles
+function setWP(id, open){
+  document.querySelectorAll(".act-"+id).forEach(n=>n.classList.toggle("hidden",!open));
+  const l=document.querySelector(`.label.wp[data-wp="${id}"]`); l && l.classList.toggle("open",open);
+}
+document.querySelectorAll(".label.wp").forEach(l=>l.addEventListener("click",()=>setWP(l.dataset.wp,!l.classList.contains("open"))));
+document.getElementById("btnAll").onclick=()=>WPS.forEach(w=>setWP(w.id,true));
+document.getElementById("btnNone").onclick=()=>WPS.forEach(w=>setWP(w.id,false));
+
+// tooltip
+const tip=document.getElementById("tip");
+document.addEventListener("mousemove",e=>{
+  const t=e.target.closest("[data-tip]");
+  if(!t){tip.style.opacity=0;return;}
+  tip.innerHTML=t.dataset.tip; tip.style.opacity=1;
+  const x=Math.min(e.clientX+14, innerWidth-tip.offsetWidth-10); tip.style.left=x+"px"; tip.style.top=(e.clientY+14)+"px";
+});
+
+// table
+const rows=[];
+WPS.forEach(w=>w.dl.forEach(([c,m,n])=>rows.push({m,c,n,wp:w.id,col:w.c})));
+MILESTONES.forEach(([c,m,n])=>rows.push({m,c,n,wp:"Progetto",col:"--ms",ms:true}));
+rows.sort((a,b)=>a.m-b.m || (a.ms?1:0)-(b.ms?1:0) || a.c.localeCompare(b.c));
+const tb=document.querySelector("#tbl tbody");
+rows.forEach(r=>{
+  const tr=el("tr");
+  tr.innerHTML=`<td class="m">M${r.m}</td><td class="m">${r.ms?"◆ ":`<i class="dot" style="background:var(${r.col})"></i>`}${r.c}</td><td>${r.n}</td><td>${r.wp}</td>`;
+  tb.appendChild(tr);
+});
+</script>
+</body>
+</html>
